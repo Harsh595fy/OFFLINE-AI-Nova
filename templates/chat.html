@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor Nova - Multilingual AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-body: #343541;
+            --bg-sidebar: #202123;
+            --bg-input: #40414f;
+            --text-primary: #ececf1;
+            --text-secondary: #c5c5d2;
+            --accent: #10a37f;
+            --mic-active: #ff4444;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            gap: 20px;
+        }
+
+        .control-panel {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .control-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #8e8ea0;
+            margin-bottom: 8px;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        select {
+            width: 100%;
+            background: #40414f;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .voice-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px; width: 14px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Main Chat */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 120px;
+            scroll-behavior: smooth;
+        }
+
+        .message-row {
+            display: flex;
+            gap: 20px;
+            padding: 24px calc(50% - 350px);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            position: relative; /* Needed for positioning actions */
+        }
+
+        .message-row.ai { background-color: #444654; }
+        .message-row.user { background-color: var(--bg-body); }
+
+        .avatar-icon {
+            width: 30px; height: 30px;
+            border-radius: 2px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .user .avatar-icon { background: #5436DA; }
+        .ai .avatar-icon { background: var(--accent); }
+
+        .message-content {
+            flex: 1;
+            line-height: 1.6;
+            font-size: 1rem;
+            overflow-x: hidden;
+            padding-bottom: 30px; /* Space for action buttons */
+        }
+
+        /* --- NEW: MESSAGE ACTION BUTTONS (Copy/Download) --- */
+        .message-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .action-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Code Blocks */
+        .code-wrapper {
+            margin: 15px 0;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .code-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #343541; padding: 6px 15px;
+            font-size: 0.75rem; color: #d1d5db;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .copy-btn {
+            background: transparent; border: none; color: #d1d5db;
+            cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; gap: 5px;
+        }
+        .copy-btn:hover { color: white; }
+        
+        /* Input Area */
+        .input-area {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(180deg, transparent, var(--bg-body) 10%);
+            padding: 30px 20px;
+            display: flex; justify-content: center;
+        }
+        .input-box-wrapper {
+            width: 100%; max-width: 768px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            display: flex; align-items: flex-end;
+            padding: 10px 15px;
+            border: 1px solid rgba(0,0,0,0.2);
+            gap: 10px;
+        }
+        textarea {
+            width: 100%; background: transparent; border: none; color: white;
+            font-family: inherit; font-size: 1rem; resize: none;
+            max-height: 200px; outline: none; padding: 5px 0; line-height: 1.5;
+        }
+        .input-buttons {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .send-btn, .mic-btn {
+            background: transparent; border: none; color: var(--text-secondary);
+            cursor: pointer; padding: 5px 10px; transition: color 0.2s;
+            font-size: 1rem;
+        }
+        .send-btn:hover { color: var(--accent); }
+        .mic-btn:hover { color: var(--mic-active); }
+        .mic-btn.active { 
+            color: var(--mic-active); 
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* Mobile */
+        @media(max-width: 768px) {
+            .sidebar { display: none; }
+            .message-row { padding: 24px 15px; }
+        }
+        
+        /* Status Indicator */
+        .status-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator" id="statusIndicator"></div>
+
+    <div class="sidebar">
+        <div style="display:flex; gap:10px; align-items:center; color:white; font-weight:600;">
+            <i class="fas fa-brain" style="color:var(--accent)"></i> Professor Nova
+        </div>
+
+        <div class="control-panel">
+            <label class="control-label">Language</label>
+            <select id="languageSelect">
+                <option value="english">English (US)</option>
+                <option value="hindi">Hindi (India)</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+                <option value="chinese">Chinese</option>
+                <option value="japanese">Japanese</option>
+                <option value="arabic">Arabic</option>
+            </select>
+
+            <div class="voice-toggle">
+                <span>AI Voice Response</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="voiceToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div style="margin-top:15px;">
+                <div class="control-label">Voice Input Language</div>
+                <select id="inputLanguageSelect">
+                    <option value="en-US">English (US)</option>
+                    <option value="hi-IN">Hindi (India)</option>
+                    <option value="es-ES">Spanish (Spain)</option>
+                    <option value="fr-FR">French (France)</option>
+                    <option value="de-DE">German (Germany)</option>
+                    <option value="zh-CN">Chinese (China)</option>
+                    <option value="ja-JP">Japanese (Japan)</option>
+                    <option value="ar-SA">Arabic (Saudi Arabia)</option>
+                </select>
+            </div>
+            
+            <div style="margin-top:15px; display:flex; gap:10px;">
+                <button onclick="generateImage()" style="padding:8px 12px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-family:inherit; width:100%;">
+                    🎨 Generate Image
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-top:auto; font-size:0.8rem; color:#666; text-align:center;">
+            Running on Flask & Local AI
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-container" id="chatContainer">
+            <div class="message-row ai">
+                <div class="avatar-icon"><i class="fas fa-robot"></i></div>
+                <div class="message-content">
+                    Hello! Select a language from the sidebar and I will respond in text and voice. You can also click the microphone button to speak your message.
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-box-wrapper">
+                <textarea id="userInput" rows="1" placeholder="Type your message or click the microphone to speak..."></textarea>
+                <div class="input-buttons">
+                    <button class="mic-btn" id="micButton" onclick="toggleSpeechRecognition()" title="Click to start speaking">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="send-btn" onclick="sendMessage()" title="Send message">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const languageSelect = document.getElementById('languageSelect');
+        const voiceToggle = document.getElementById('voiceToggle');
+        const inputLanguageSelect = document.getElementById('inputLanguageSelect');
+        const micButton = document.getElementById('micButton');
+        const statusIndicator = document.getElementById('statusIndicator');
+
+        // --- SPEECH RECOGNITION SETUP ---
+        let recognition = null;
+        let isListening = false;
+        let finalTranscript = '';
+        
+        function initializeSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                micButton.style.display = 'none';
+                return;
+            }
+            
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            
+            recognition.onstart = function() {
+                isListening = true;
+                micButton.classList.add('active');
+                showStatus('Listening... Speak now!', 'listening');
+            };
+            
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) finalTranscript += transcript;
+                    else interimTranscript += transcript;
+                }
+                if (interimTranscript) {
+                    userInput.value = finalTranscript + interimTranscript;
+                    userInput.style.height = (userInput.scrollHeight) + 'px';
+                }
+            };
+            
+            recognition.onerror = function(event) {
+                stopSpeechRecognition();
+                if(event.error !== 'no-speech') showStatus('Speech error: ' + event.error, 'error');
+            };
+            
+            recognition.onend = function() {
+                stopSpeechRecognition();
+                if (finalTranscript.trim()) {
+                    userInput.value = finalTranscript;
+                    userInput.focus();
+                }
+            };
+        }
+        
+        function toggleSpeechRecognition() {
+            if (!recognition) initializeSpeechRecognition();
+            isListening ? stopSpeechRecognition() : startSpeechRecognition();
+        }
+        
+        function startSpeechRecognition() {
+            if (!recognition) return;
+            finalTranscript = '';
+            isListening = true;
+            recognition.lang = inputLanguageSelect.value;
+            recognition.start();
+        }
+        
+        function stopSpeechRecognition() {
+            isListening = false;
+            micButton.classList.remove('active');
+            if (recognition) recognition.stop();
+            hideStatus();
+        }
+        
+        function showStatus(message, type) {
+            statusIndicator.textContent = message;
+            statusIndicator.style.display = 'block';
+            statusIndicator.style.background = type === 'error' ? 'rgba(255, 68, 68, 0.8)' : 'rgba(16, 163, 127, 0.8)';
+            setTimeout(hideStatus, 3000);
+        }
+        
+        function hideStatus() {
+            statusIndicator.style.display = 'none';
+        }
+
+        // --- MARKDOWN & CODE BLOCKS ---
+        const renderer = new marked.Renderer();
+        renderer.code = function(code, language) {
+            const validLang = language && hljs.getLanguage(language) ? language : 'plaintext';
+            const highlighted = hljs.highlight(code, { language: validLang }).value;
+            return `
+            <div class="code-wrapper">
+                <div class="code-header">
+                    <span>${validLang}</span>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fas fa-copy"></i> Copy</button>
+                </div>
+                <pre><code class="hljs language-${validLang}">${highlighted}</code></pre>
+                <div style="display:none" class="raw-code">${encodeURIComponent(code)}</div>
+            </div>`;
+        };
+        marked.setOptions({ renderer: renderer });
+
+        // --- VOICE SYNTHESIS ---
+        let voices = [];
+        window.speechSynthesis.onvoiceschanged = () => voices = window.speechSynthesis.getVoices();
+        
+        function speakText(text, langCode) {
+            if (!voiceToggle.checked) return;
+            window.speechSynthesis.cancel();
+            
+            const cleanText = text.replace(/```[\s\S]*?```/g, "Code block omitted.").replace(/[*#`]/g, "");
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            
+            let selectedVoice = voices.find(v => v.lang === langCode) || voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+            if (selectedVoice) utterance.voice = selectedVoice;
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // --- CHAT LOGIC ---
+        function copyCode(btn) {
+            const wrapper = btn.closest('.code-wrapper');
+            const rawCode = decodeURIComponent(wrapper.querySelector('.raw-code').innerText);
+            navigator.clipboard.writeText(rawCode).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => btn.innerHTML = originalHtml, 2000);
+            });
+        }
+
+        // --- NEW: GLOBAL COPY AND DOWNLOAD FUNCTIONS ---
+        function copyMessageText(btn) {
+            const container = btn.closest('.message-content');
+            // Find the hidden raw text div
+            const rawText = decodeURIComponent(container.querySelector('.raw-message-text').innerText);
+            
+            navigator.clipboard.writeText(rawText).then(() => {
+                const icon = btn.querySelector('i');
+                icon.className = 'fas fa-check';
+                setTimeout(() => icon.className = 'fas fa-copy', 2000);
+            });
+        }
+
+        function downloadMessageText(btn, extension) {
+            const container = btn.closest('.message-content');
+            const rawText = decodeURIComponent(container.querySelector('.raw-message-text').innerText);
+            
+            const blob = new Blob([rawText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `nova_ai_response_${Date.now()}.${extension}`;
+            
+            document.body.appendChild(a);
+            a.click();
+            
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage('user', text);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            if (isListening) stopSpeechRecognition();
+
+            const loadingId = 'loading-' + Date.now();
+            appendLoading(loadingId);
+
+            try {
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        language: languageSelect.value,
+                        subject: "General"
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+
+                if (data.success) {
+                    appendMessage('ai', data.reply, true);
+                    speakText(data.reply, data.lang_code || 'en-US');
+                } else {
+                    appendMessage('ai', "Error: " + (data.error || "Unknown error"));
+                }
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                appendMessage('ai', "Connection failed. Is the server running?");
+            }
+        }
+        
+        async function generateImage() {
+            const prompt = userInput.value.trim();
+            if (!prompt) return alert("Enter an image description first");
+            
+            appendMessage('user', "🎨 Generate image: " + prompt);
+            const loadingId = 'img-' + Date.now();
+            appendLoading(loadingId);
+
+            try {
+                const res = await fetch('/api/ai/image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const data = await res.json();
+                document.getElementById(loadingId).remove();
+
+                if (data.success) {
+                    appendMessage('ai', `<div><p>Generated image for: <em>"${prompt}"</em></p><img src="${data.image_url}" style="max-width:100%; border-radius:10px; margin-top:10px;"></div>`);
+                } else {
+                    appendMessage('ai', "Error generating image.");
+                }
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                appendMessage('ai', "Image generation failed.");
+            }
+        }
+
+        function appendMessage(sender, text, isMarkdown = false) {
+            const div = document.createElement('div');
+            div.className = `message-row ${sender}`;
+            const avatar = sender === 'ai' ? '<i class="fas fa-robot"></i>' : '<i class="fas fa-user"></i>';
+            const content = isMarkdown ? marked.parse(text) : text.replace(/\n/g, '<br>');
+            
+            // Create Action Buttons only for AI
+            let actionButtons = '';
+            if (sender === 'ai' && isMarkdown) { // Only show for real AI replies
+                actionButtons = `
+                    <div class="message-actions">
+                        <button class="action-btn" onclick="copyMessageText(this)" title="Copy to Clipboard">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button class="action-btn" onclick="downloadMessageText(this, 'txt')" title="Download as .txt">
+                            <i class="fas fa-file-alt"></i> TXT
+                        </button>
+                        <button class="action-btn" onclick="downloadMessageText(this, 'md')" title="Download as .md">
+                            <i class="fas fa-file-code"></i> MD
+                        </button>
+                    </div>
+                    <div style="display:none" class="raw-message-text">${encodeURIComponent(text)}</div>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="avatar-icon">${avatar}</div>
+                <div class="message-content">
+                    ${content}
+                    ${actionButtons}
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendLoading(id) {
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = `message-row ai`;
+            div.innerHTML = `<div class="avatar-icon"><i class="fas fa-robot"></i></div><div class="message-content" style="color:#8e8ea0;"><i class="fas fa-circle-notch fa-spin"></i> Thinking...</div>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Events
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+        document.addEventListener('DOMContentLoaded', initializeSpeechRecognition);
+    </script>
+</body>
+</html>

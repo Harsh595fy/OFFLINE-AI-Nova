@@ -1,0 +1,30 @@
+# Core Requirements
+Flask==3.0.0
+requests==2.31.0
+
+# AI / ML Dependencies
+torch==2.1.2
+torchvision==0.16.2
+transformers==4.35.2
+diffusers==0.25.0
+accelerate==0.25.0
+safetensors==0.4.1
+
+# Optional: For CPU-only systems (use these if you don't have CUDA)
+# torch==2.1.2+cpu
+# torchvision==0.16.2+cpu
+
+# Local LLM Support
+llama-cpp-python==0.2.48
+
+# Image Processing
+Pillow==10.1.0
+
+# Other Utilities
+uuid==1.30
+python-dotenv==1.0.0
+numpy==1.24.3
+
+# Development
+tqdm==4.66.1
+huggingface-hub==0.19.4
