@@ -1,3 +1,0 @@
-flask
-requests
-llama-cpp-python
