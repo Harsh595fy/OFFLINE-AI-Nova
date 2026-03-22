@@ -48,7 +48,7 @@ OFFLINE-AI-Nova/
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/OFFLINE-AI-Nova.git
+git clone https://github.com/Harsh595fy/OFFLINE-AI-Nova.git
 cd OFFLINE-AI-Nova
 ```
 
